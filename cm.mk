@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+# Bootanimation
 TARGET_SCREEN_WIDTH := 1920
 TARGET_SCREEN_HEIGHT := 1280
 
@@ -29,10 +30,7 @@ DEVICE_PACKAGE_OVERLAYS += device/bn/ovation/overlay/cm
 
 PRODUCT_NAME := cm_ovation
 PRODUCT_DEVICE := ovation
-PRODUCT_BRAND := Android
-PRODUCT_MODEL := BN NookHD+
-PRODUCT_MANUFACTURER := Barnes & Noble
+PRODUCT_BRAND := NOOK
+PRODUCT_MODEL := Nook HD+
+PRODUCT_MANUFACTURER := BN LLC
 PRODUCT_RELEASE_NAME := NookHD+
-
-
-

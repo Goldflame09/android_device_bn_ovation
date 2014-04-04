@@ -4,8 +4,11 @@ on init
     # See storage config details at http://source.android.com/tech/storage/
     mkdir /mnt/shell/emulated 0700 shell shell
     mkdir /storage/emulated 0555 root root
+    mkdir /storage 0751 root sdcard_r
+    mkdir /mnt/media_rw 0700 media_rw media_rw
 
     export EXTERNAL_STORAGE /storage/emulated/legacy
+    export SECONDARY_STORAGE /storage/sdcard1:/storage/usbdisk
     export EMULATED_STORAGE_SOURCE /mnt/shell/emulated
     export EMULATED_STORAGE_TARGET /storage/emulated
 
@@ -16,20 +19,21 @@ on init
     symlink /mnt/shell/emulated/0    /storage/emulated/legacy
 
     # create external sd card mount points
-    mkdir /mnt/media_rw/sdcard1 0700 media_rw media_rw
-    mkdir /storage/sdcard1 0700 root root
+    mkdir /mnt/media_rw/sdcard1 0000 system system
+    mkdir /storage/sdcard1 0000 system system
     symlink /storage/sdcard1 /ext_sdcard
     symlink /storage/sdcard1 /mnt/ext_sdcard
-    export SECONDARY_STORAGE /storage/sdcard1
 
     # create removable USB Mass Storage mountpoints
-    mkdir /mnt/media_rw/usb0 0700 media_rw media_rw
-    mkdir /storage/usb0 0700 root root
+    mkdir /mnt/media_rw/usb0 0000 system system
+    mkdir /storage/usb0 0000 system system
+    symlink /storage/usb0 /usb0
+    symlink /storage/usb0 /mnt/usb0
 
-    # for ovation
-    mkdir /rom 0777 root root	
+    # for Nook
+    mkdir /rom 0777 root root
     mkdir /bootdata 0777 root root
-	
+
     # power management
     # Enable off mode by default
     write /sys/kernel/debug/pm_debug/enable_off_mode 1
@@ -37,6 +41,7 @@ on init
 on fs
     # mount partitions
     mount_all /fstab.ovation
+    swapon_all /fstab.ovation
     setprop ro.crypto.fuse_sdcard true
 
     # pvr module
@@ -52,7 +57,7 @@ on fs
     chown system system /sys/bus/i2c/drivers/kxtf9/1-000e/delay
     chown system system /sys/bus/i2c/drivers/kxtf9/1-000e/enable
 
-    # OVATION use the path below for lcd brightness control
+    # NOOK use the path below for lcd brightness control
     chown system system /sys/class/backlight/lcd-backlight/brightness
 
     # USB ID properties - writable by all for now
@@ -109,7 +114,7 @@ on post-fs-data
     setprop vold.post_fs_data_done 1
     start sdcard
 
-#for Bluetooth HID
+    #for Bluetooth HID
     chmod 0666 /dev/uhid
 
 on boot
@@ -180,15 +185,18 @@ service bootcnt /system/bin/clear_bootcnt.sh
     disabled
     oneshot
 
-service sdcard /system/bin/sdcard -u 1023 -g 1023 /data/media /mnt/shell/emulated
+# create virtual SD card at /mnt/sdcard, based on the /data/media directory
+# daemon will drop to user/group system/media_rw after initializing
+# underlying files in /data/media will be created with user and group media_rw (1023)
+service sdcard /system/bin/sdcard -u 1023 -g 1023 -l /data/media /mnt/shell/emulated
+    class late_start
+    oneshot
+
+service fuse_sdcard1 /system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard1 /storage/sdcard1
     class late_start
     disabled
 
-service fuse_sdcard1 /system/bin/sdcard -u 1023 -g 1023 /mnt/media_rw/sdcard1 /storage/sdcard1
-    class late_start
-    disabled
-
-service fuse_usb0 /system/bin/sdcard -u 1023 -g 1023 /mnt/media_rw/usb0 /storage/usb0
+service fuse_usb0 /system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/usb0 /storage/usb0
     class late_start
     disabled
 
